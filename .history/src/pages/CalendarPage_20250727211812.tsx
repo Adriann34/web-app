@@ -336,38 +336,38 @@ function CalendarPage() {
           </div>
         )}
 
-{/* Priority Filters - only show when expanded */}
-{!sidebarCollapsed && (
-  <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-    <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">PRIORITY</h3>
-    <div className="space-y-2">
-      {[
-        { name: 'High Priority', color: 'bg-red-500', priority: 'high' as const },
-        { name: 'Medium Priority', color: 'bg-yellow-500', priority: 'medium' as const },
-        { name: 'Low Priority', color: 'bg-green-500', priority: 'low' as const },
-      ].map((priorityFilter) => {
-        const count = tasks.filter(t => t.priority === priorityFilter.priority).length;
-        return (
-          <div key={priorityFilter.name} className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              checked={visiblePriorities[priorityFilter.priority]}
-              onChange={() => togglePriorityVisibility(priorityFilter.priority)}
-              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-            />
-            <div className={`w-3 h-3 rounded-full ${priorityFilter.color}`}></div>
-            <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">
-              {priorityFilter.name}
-            </span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {count}
-            </span>
+        {/* Priority Filters - only show when expanded */}
+        {!sidebarCollapsed && (
+          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+            <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">PRIORITY</h3>
+            <div className="space-y-2">
+              {[
+                { name: 'High Priority', icon: '🔴', priority: 'high' as const },
+                { name: 'Medium Priority', icon: '🟡', priority: 'medium' as const },
+                { name: 'Low Priority', icon: '🟢', priority: 'low' as const },
+              ].map((priorityFilter) => {
+                const count = tasks.filter(t => t.priority === priorityFilter.priority).length;
+                return (
+                  <div key={priorityFilter.name} className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      checked={visiblePriorities[priorityFilter.priority]}
+                      onChange={() => togglePriorityVisibility(priorityFilter.priority)}
+                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm">{priorityFilter.icon}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">
+                      {priorityFilter.name}
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {count}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        );
-      })}
-    </div>
-  </div>
-)}
+        )}
 
         {/* Collapsed sidebar - show just colored dots */}
         {sidebarCollapsed && (

@@ -11,23 +11,61 @@ function CalendarPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   
-  // Remove hardcoded events - start with empty array
-  const [tasks, setTasks] = useState<Task[]>([]);
-
-  // Calendar visibility state
-  const [visibleCategories, setVisibleCategories] = useState({
-    work: true,
-    personal: true,
-    health: true,
-    family: true
-  });
-
-  // Priority visibility state
-  const [visiblePriorities, setVisiblePriorities] = useState({
-    low: true,
-    medium: true,
-    high: true
-  });
+  // Simple state management without undo/redo
+  const [tasks, setTasks] = useState<Task[]>([
+    // Sample data to visualize the layout
+    {
+      id: '1',
+      title: 'Workout',
+      description: 'Morning cardio session',
+      date: '2025-07-28',
+      startTime: '08:00',
+      endTime: '09:00',
+      allDay: false,
+      completed: false,
+      priority: 'high',
+      category: 'health',
+      location: 'Home Gym',
+      reminders: [15],
+      recurring: { type: 'none', interval: 1 },
+      createdAt: '2025-07-27T10:00:00Z',
+      updatedAt: '2025-07-27T10:00:00Z'
+    },
+    {
+      id: '2',
+      title: 'Team Meeting',
+      description: 'Weekly standup with the development team',
+      date: '2025-07-28',
+      startTime: '10:00',
+      endTime: '11:00',
+      allDay: false,
+      completed: false,
+      priority: 'medium',
+      category: 'work',
+      location: 'Conference Room A',
+      reminders: [15, 5],
+      recurring: { type: 'weekly', interval: 1 },
+      createdAt: '2025-07-27T10:00:00Z',
+      updatedAt: '2025-07-27T10:00:00Z'
+    },
+    {
+      id: '3',
+      title: 'Lunch with Client',
+      description: 'Business lunch discussion',
+      date: '2025-07-29',
+      startTime: '12:30',
+      endTime: '13:30',
+      allDay: false,
+      completed: false,
+      priority: 'high',
+      category: 'work',
+      location: 'Downtown Restaurant',
+      reminders: [30],
+      recurring: { type: 'none', interval: 1 },
+      createdAt: '2025-07-27T10:00:00Z',
+      updatedAt: '2025-07-27T10:00:00Z'
+    }
+  ]);
 
   const [viewType, setViewType] = useState<'month' | 'week' | 'day'>('week');
 
@@ -112,21 +150,8 @@ function CalendarPage() {
     return date.toISOString().split('T')[0];
   };
 
-  // Filter tasks by date, category visibility, and priority visibility
   const getTasksForDate = (date: string) => {
-    return tasks.filter(task => 
-      task.date === date && 
-      visibleCategories[task.category] && 
-      visiblePriorities[task.priority]
-    );
-  };
-
-  // Get all visible tasks
-  const getVisibleTasks = () => {
-    return tasks.filter(task => 
-      visibleCategories[task.category] && 
-      visiblePriorities[task.priority]
-    );
+    return tasks.filter(task => task.date === date);
   };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
@@ -201,28 +226,11 @@ function CalendarPage() {
     setSearchParams(params);
   };
 
-  // Toggle category visibility
-  const toggleCategoryVisibility = (category: 'work' | 'personal' | 'health' | 'family') => {
-    setVisibleCategories(prev => ({
-      ...prev,
-      [category]: !prev[category]
-    }));
-  };
-
-  // Toggle priority visibility
-  const togglePriorityVisibility = (priority: 'low' | 'medium' | 'high') => {
-    setVisiblePriorities(prev => ({
-      ...prev,
-      [priority]: !prev[priority]
-    }));
-  };
-
   const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const weekDaysShort = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
   const currentWeek = getCurrentWeek();
   const miniCalendarDays = generateMiniCalendar();
-  const visibleTasks = getVisibleTasks();
 
   return (
     <div className="flex h-screen bg-white dark:bg-gray-900">
@@ -308,104 +316,43 @@ function CalendarPage() {
             <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">MY CALENDARS</h3>
             <div className="space-y-2">
               {[
-                { name: 'Work', color: 'bg-green-500', category: 'work' as const },
-                { name: 'Personal', color: 'bg-yellow-500', category: 'personal' as const },
-                { name: 'Health', color: 'bg-red-500', category: 'health' as const },
-                { name: 'Family Events', color: 'bg-purple-500', category: 'family' as const },
-              ].map((calendar) => {
-                const count = tasks.filter(t => t.category === calendar.category).length;
-                return (
-                  <div key={calendar.name} className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      checked={visibleCategories[calendar.category]}
-                      onChange={() => toggleCategoryVisibility(calendar.category)}
-                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                    />
-                    <div className={`w-3 h-3 rounded-full ${calendar.color}`}></div>
-                    <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">
-                      {calendar.name}
-                    </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      {count}
-                    </span>
-                  </div>
-                );
-              })}
+                { name: 'Work', color: 'bg-green-500', count: tasks.filter(t => t.category === 'work').length },
+                { name: 'Personal', color: 'bg-yellow-500', count: tasks.filter(t => t.category === 'personal').length },
+                { name: 'Health', color: 'bg-red-500', count: tasks.filter(t => t.category === 'health').length },
+                { name: 'Family Events', color: 'bg-purple-500', count: tasks.filter(t => t.category === 'family').length },
+              ].map((calendar) => (
+                <div key={calendar.name} className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    defaultChecked
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                  />
+                  <div className={`w-3 h-3 rounded-full ${calendar.color}`}></div>
+                  <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">
+                    {calendar.name}
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {calendar.count}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
-{/* Priority Filters - only show when expanded */}
-{!sidebarCollapsed && (
-  <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-    <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">PRIORITY</h3>
-    <div className="space-y-2">
-      {[
-        { name: 'High Priority', color: 'bg-red-500', priority: 'high' as const },
-        { name: 'Medium Priority', color: 'bg-yellow-500', priority: 'medium' as const },
-        { name: 'Low Priority', color: 'bg-green-500', priority: 'low' as const },
-      ].map((priorityFilter) => {
-        const count = tasks.filter(t => t.priority === priorityFilter.priority).length;
-        return (
-          <div key={priorityFilter.name} className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              checked={visiblePriorities[priorityFilter.priority]}
-              onChange={() => togglePriorityVisibility(priorityFilter.priority)}
-              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-            />
-            <div className={`w-3 h-3 rounded-full ${priorityFilter.color}`}></div>
-            <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">
-              {priorityFilter.name}
-            </span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {count}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  </div>
-)}
-
         {/* Collapsed sidebar - show just colored dots */}
         {sidebarCollapsed && (
-          <div className="px-2 py-4 space-y-6">
-            {/* Category dots */}
+          <div className="px-2 py-4">
             <div className="space-y-3">
               {[
-                { color: 'bg-green-500', category: 'work' as const },
-                { color: 'bg-yellow-500', category: 'personal' as const },
-                { color: 'bg-red-500', category: 'health' as const },
-                { color: 'bg-purple-500', category: 'family' as const },
+                { color: 'bg-green-500' },
+                { color: 'bg-yellow-500' },
+                { color: 'bg-red-500' },
+                { color: 'bg-purple-500' },
               ].map((calendar, index) => (
-                <button
-                  key={index}
-                  onClick={() => toggleCategoryVisibility(calendar.category)}
-                  className={`w-3 h-3 rounded-full ${calendar.color} mx-auto block transition-opacity ${
-                    visibleCategories[calendar.category] ? 'opacity-100' : 'opacity-30'
-                  }`}
-                ></button>
-              ))}
-            </div>
-
-            {/* Priority dots */}
-            <div className="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-              {[
-                { emoji: '🔴', priority: 'high' as const },
-                { emoji: '🟡', priority: 'medium' as const },
-                { emoji: '🟢', priority: 'low' as const },
-              ].map((priorityFilter, index) => (
-                <button
-                  key={index}
-                  onClick={() => togglePriorityVisibility(priorityFilter.priority)}
-                  className={`text-xs mx-auto block transition-opacity ${
-                    visiblePriorities[priorityFilter.priority] ? 'opacity-100' : 'opacity-30'
-                  }`}
-                >
-                  {priorityFilter.emoji}
-                </button>
+                <div key={index} className="flex justify-center">
+                  <div className={`w-3 h-3 rounded-full ${calendar.color}`}></div>
+                </div>
               ))}
             </div>
           </div>
@@ -471,37 +418,37 @@ function CalendarPage() {
 
         {/* Week View */}
         <div className="flex-1 overflow-auto">
-          {/* Week Header */}
-          <div className="flex border-b border-gray-200 dark:border-gray-700">
-            <div className="w-16 p-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center justify-center border-r border-gray-200 dark:border-gray-700">
-              ALL DAY
-            </div>
-            <div className="flex-1 grid grid-cols-7">
-              {currentWeek.map((date, index) => {
-                const isToday = formatDate(date) === formatDate(today);
-                return (
-                  <div
-                    key={index}
-                    className={`p-4 text-center border-l border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
-                      isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                    }`}
-                    onClick={() => openModal(formatDate(date))}
-                  >
-                    <div className={`text-lg font-semibold ${
-                      isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
-                    }`}>
-                      {date.getDate()}
-                    </div>
-                    <div className={`text-sm ${
-                      isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'
-                    }`}>
-                      {weekDaysShort[index]}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+{/* Week Header */}
+<div className="flex border-b border-gray-200 dark:border-gray-700">
+  <div className="w-16 p-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center justify-center border-r border-gray-200 dark:border-gray-700">
+    ALL DAY
+  </div>
+  <div className="flex-1 grid grid-cols-7">
+    {currentWeek.map((date, index) => {
+      const isToday = formatDate(date) === formatDate(today);
+      return (
+        <div
+          key={index}
+          className={`p-4 text-center border-l border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
+            isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+          }`}
+          onClick={() => openModal(formatDate(date))}
+        >
+          <div className={`text-lg font-semibold ${
+            isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
+          }`}>
+            {date.getDate()}
           </div>
+          <div className={`text-sm ${
+            isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'
+          }`}>
+            {weekDaysShort[index]}
+          </div>
+        </div>
+      );
+    })}
+  </div>
+</div>
 
           {/* Time Grid */}
           <div className="relative">
@@ -552,18 +499,23 @@ function CalendarPage() {
                     height = Math.max(24, (durationMinutes * 64) / 60); // minimum 24px height
                   }
                   
-                  // Fixed category color mapping
+                  const colors = {
+                    high: 'bg-red-100 dark:bg-red-900/30 border-red-500 text-red-700 dark:text-red-300',
+                    medium: 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-500 text-yellow-700 dark:text-yellow-300',
+                    low: 'bg-green-100 dark:bg-green-900/30 border-green-500 text-green-700 dark:text-green-300',
+                  };
+
                   const categoryColors = {
-                    work: 'bg-green-100 dark:bg-green-900/30 border-green-500 text-green-700 dark:text-green-300',
-                    personal: 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-500 text-yellow-700 dark:text-yellow-300',
-                    health: 'bg-red-100 dark:bg-red-900/30 border-red-500 text-red-700 dark:text-red-300',
-                    family: 'bg-purple-100 dark:bg-purple-900/30 border-purple-500 text-purple-700 dark:text-purple-300'
+                    work: 'border-green-500',
+                    personal: 'border-yellow-500',
+                    health: 'border-red-500',
+                    family: 'border-purple-500'
                   };
 
                   return (
                     <div
                       key={`${task.id}-${dayIndex}`}
-                      className={`absolute rounded-lg p-2 m-1 border-l-4 cursor-pointer hover:shadow-md transition-shadow group ${categoryColors[task.category]}`}
+                      className={`absolute rounded-lg p-2 m-1 border-l-4 cursor-pointer hover:shadow-md transition-shadow group ${colors[task.priority]} ${categoryColors[task.category]}`}
                       style={{
                         top: `${top}px`,
                         left: `${left}%`,

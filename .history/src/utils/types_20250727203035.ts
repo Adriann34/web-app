@@ -15,7 +15,7 @@ export interface Task {
   recurring?: {
     type: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
     interval: number;
-    endDate?: string; // Make this optional to match TaskFormData
+    endDate?: string;
   };
   createdAt: string;
   updatedAt: string;
@@ -35,6 +35,6 @@ export interface TaskFormData {
   recurring: {
     type: 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
     interval: number;
-    endDate: string; // Keep this as required string for form
+    endDate: string;
   };
 }

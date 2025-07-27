@@ -22,13 +22,6 @@ function CalendarPage() {
     family: true
   });
 
-  // Priority visibility state
-  const [visiblePriorities, setVisiblePriorities] = useState({
-    low: true,
-    medium: true,
-    high: true
-  });
-
   const [viewType, setViewType] = useState<'month' | 'week' | 'day'>('week');
 
   // Check for modal state in URL
@@ -112,21 +105,16 @@ function CalendarPage() {
     return date.toISOString().split('T')[0];
   };
 
-  // Filter tasks by date, category visibility, and priority visibility
+  // Filter tasks by date and visibility
   const getTasksForDate = (date: string) => {
     return tasks.filter(task => 
-      task.date === date && 
-      visibleCategories[task.category] && 
-      visiblePriorities[task.priority]
+      task.date === date && visibleCategories[task.category]
     );
   };
 
   // Get all visible tasks
   const getVisibleTasks = () => {
-    return tasks.filter(task => 
-      visibleCategories[task.category] && 
-      visiblePriorities[task.priority]
-    );
+    return tasks.filter(task => visibleCategories[task.category]);
   };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
@@ -206,14 +194,6 @@ function CalendarPage() {
     setVisibleCategories(prev => ({
       ...prev,
       [category]: !prev[category]
-    }));
-  };
-
-  // Toggle priority visibility
-  const togglePriorityVisibility = (priority: 'low' | 'medium' | 'high') => {
-    setVisiblePriorities(prev => ({
-      ...prev,
-      [priority]: !prev[priority]
     }));
   };
 
@@ -336,43 +316,9 @@ function CalendarPage() {
           </div>
         )}
 
-{/* Priority Filters - only show when expanded */}
-{!sidebarCollapsed && (
-  <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-    <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">PRIORITY</h3>
-    <div className="space-y-2">
-      {[
-        { name: 'High Priority', color: 'bg-red-500', priority: 'high' as const },
-        { name: 'Medium Priority', color: 'bg-yellow-500', priority: 'medium' as const },
-        { name: 'Low Priority', color: 'bg-green-500', priority: 'low' as const },
-      ].map((priorityFilter) => {
-        const count = tasks.filter(t => t.priority === priorityFilter.priority).length;
-        return (
-          <div key={priorityFilter.name} className="flex items-center space-x-3">
-            <input
-              type="checkbox"
-              checked={visiblePriorities[priorityFilter.priority]}
-              onChange={() => togglePriorityVisibility(priorityFilter.priority)}
-              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-            />
-            <div className={`w-3 h-3 rounded-full ${priorityFilter.color}`}></div>
-            <span className="text-sm text-gray-700 dark:text-gray-300 flex-1">
-              {priorityFilter.name}
-            </span>
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              {count}
-            </span>
-          </div>
-        );
-      })}
-    </div>
-  </div>
-)}
-
         {/* Collapsed sidebar - show just colored dots */}
         {sidebarCollapsed && (
-          <div className="px-2 py-4 space-y-6">
-            {/* Category dots */}
+          <div className="px-2 py-4">
             <div className="space-y-3">
               {[
                 { color: 'bg-green-500', category: 'work' as const },
@@ -387,25 +333,6 @@ function CalendarPage() {
                     visibleCategories[calendar.category] ? 'opacity-100' : 'opacity-30'
                   }`}
                 ></button>
-              ))}
-            </div>
-
-            {/* Priority dots */}
-            <div className="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-              {[
-                { emoji: '🔴', priority: 'high' as const },
-                { emoji: '🟡', priority: 'medium' as const },
-                { emoji: '🟢', priority: 'low' as const },
-              ].map((priorityFilter, index) => (
-                <button
-                  key={index}
-                  onClick={() => togglePriorityVisibility(priorityFilter.priority)}
-                  className={`text-xs mx-auto block transition-opacity ${
-                    visiblePriorities[priorityFilter.priority] ? 'opacity-100' : 'opacity-30'
-                  }`}
-                >
-                  {priorityFilter.emoji}
-                </button>
               ))}
             </div>
           </div>
