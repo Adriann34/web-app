@@ -194,9 +194,7 @@ function CalendarPage() {
   // Time slot click handler for creating events
   const handleTimeSlotClick = (date: Date, hour: number) => {
     const dateString = formatDate(date);
-    // Convert display hour back to actual hour (6 AM = hour 6, etc.)
-    const actualHour = hour >= 18 ? hour : hour + 6; // Handle wrap-around for late night hours
-    const timeString = `${actualHour.toString().padStart(2, '0')}:00`;
+    const timeString = `${hour.toString().padStart(2, '0')}:00`;
     
     const params = new URLSearchParams(searchParams);
     params.set('modal', 'add-event');
@@ -219,33 +217,6 @@ function CalendarPage() {
       ...prev,
       [priority]: !prev[priority]
     }));
-  };
-
-  // Helper function to format hour display starting from 6 AM
-  const formatHourDisplay = (displayIndex: number) => {
-    // displayIndex 0 = 6 AM, displayIndex 1 = 7 AM, etc.
-    // displayIndex 18 = 12 AM (midnight), displayIndex 23 = 5 AM
-    const actualHour = displayIndex < 18 ? displayIndex + 6 : displayIndex - 18;
-    
-    if (actualHour === 0) return '12 AM';
-    if (actualHour < 12) return `${actualHour} AM`;
-    if (actualHour === 12) return '12 PM';
-    return `${actualHour - 12} PM`;
-  };
-
-  // Helper function to calculate position for events
-  const getEventPosition = (startTime: string) => {
-    const [hour, minute] = startTime.split(':').map(Number);
-    
-    // Convert actual hour to display position (6 AM = position 0)
-    let displayPosition;
-    if (hour >= 6) {
-      displayPosition = hour - 6; // 6 AM = 0, 7 AM = 1, etc.
-    } else {
-      displayPosition = hour + 18; // 12 AM = 18, 1 AM = 19, etc.
-    }
-    
-    return (displayPosition * 64) + (minute * 64 / 60);
   };
 
   const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -542,14 +513,14 @@ function CalendarPage() {
 
           {/* Time Grid */}
           <div className="relative">
-            {/* Time Labels - Now showing 6 AM to 5 AM next day */}
+            {/* Time Labels */}
             <div className="absolute left-0 top-0 w-16 h-full">
-              {Array.from({ length: 24 }, (_, displayIndex) => (
+              {Array.from({ length: 24 }, (_, hour) => (
                 <div
-                  key={displayIndex}
+                  key={hour}
                   className="h-16 flex items-start justify-end pr-2 text-xs text-gray-500 dark:text-gray-400"
                 >
-                  {formatHourDisplay(displayIndex)}
+                  {hour === 0 ? '12 AM' : hour <= 12 ? `${hour} AM` : `${hour - 12} PM`}
                 </div>
               ))}
             </div>
@@ -558,7 +529,7 @@ function CalendarPage() {
             <div className="ml-16 grid grid-cols-7 relative">
               {/* Background Grid */}
               {Array.from({ length: 24 * 7 }, (_, index) => {
-                const displayHour = Math.floor(index / 7); // 0-23 display positions
+                const hour = Math.floor(index / 7);
                 const day = index % 7;
                 const date = currentWeek[day];
                 
@@ -566,7 +537,7 @@ function CalendarPage() {
                   <div
                     key={index}
                     className="h-16 border-r border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
-                    onClick={() => handleTimeSlotClick(date, displayHour)}
+                    onClick={() => handleTimeSlotClick(date, hour)}
                   ></div>
                 );
               })}
@@ -577,15 +548,15 @@ function CalendarPage() {
                 return dayTasks.map((task, taskIndex) => {
                   if (!task.startTime) return null;
                   
-                  const top = getEventPosition(task.startTime);
+                  const [hour, minute] = task.startTime.split(':').map(Number);
+                  const top = (hour * 64) + (minute * 64 / 60);
                   const left = dayIndex * (100 / 7);
                   
                   // Calculate height based on duration
                   let height = 48; // default 1 hour
                   if (task.endTime) {
-                    const [startHour, startMinute] = task.startTime.split(':').map(Number);
                     const [endHour, endMinute] = task.endTime.split(':').map(Number);
-                    const durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+                    const durationMinutes = (endHour * 60 + endMinute) - (hour * 60 + minute);
                     height = Math.max(24, (durationMinutes * 64) / 60); // minimum 24px height
                   }
                   
@@ -638,17 +609,15 @@ function CalendarPage() {
           </div>
         </div>
       </div>
-
       {/* Add Event Modal */}
-      <AddEventModal
-        isOpen={isModalOpen}
-        onClose={closeModal}
-        onSave={handleSaveTask}
-        editingTask={editingTask}
-        selectedDate={modalDate || undefined}
-      />
-    </div>
-  );
+<AddEventModal
+isOpen={isModalOpen}
+onClose={closeModal}
+onSave={handleSaveTask}
+editingTask={editingTask}
+selectedDate={modalDate || undefined}
+/>
+</div>
+);
 }
-
 export default CalendarPage;

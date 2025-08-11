@@ -9,7 +9,6 @@ import DashboardPage from './pages/DashboardPage';
 import CalendarPage from './pages/CalendarPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
-import TestPage from './pages/TestPage'; // Add this import
 
 function AppLayout() {
   return (
@@ -21,7 +20,6 @@ function AppLayout() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/test" element={<TestPage />} /> {/* Add this route */}
         </Routes>
       </main>
     </div>

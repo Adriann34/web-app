@@ -8,25 +8,7 @@ import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
 import CalendarPage from './pages/CalendarPage';
 import SettingsPage from './pages/SettingsPage';
-import LoginPage from './pages/LoginPage';
-import TestPage from './pages/TestPage'; // Add this import
-
-function AppLayout() {
-  return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar />
-      <main className="flex-1">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/test" element={<TestPage />} /> {/* Add this route */}
-        </Routes>
-      </main>
-    </div>
-  );
-}
+import LoginPage from './pages/LoginPage'; // We'll create this next
 
 function App() {
   return (
@@ -37,7 +19,17 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/*" element={
               <ProtectedRoute>
-                <AppLayout />
+                <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+                  <Sidebar />
+                  <main className="flex-1">
+                    <Routes>
+                      <Route path="/" element={<HomePage />} />
+                      <Route path="/dashboard" element={<DashboardPage />} />
+                      <Route path="/calendar" element={<CalendarPage />} />
+                      <Route path="/settings" element={<SettingsPage />} />
+                    </Routes>
+                  </main>
+                </div>
               </ProtectedRoute>
             } />
           </Routes>

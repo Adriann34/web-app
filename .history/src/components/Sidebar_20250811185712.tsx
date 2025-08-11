@@ -125,7 +125,7 @@ function Sidebar(): JSX.Element {
           
           <button 
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors text-gray-600 dark:text-gray-400"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
           >
             {isCollapsed ? <Icons.ChevronRight /> : <Icons.ChevronLeft />}
           </button>
@@ -134,7 +134,7 @@ function Sidebar(): JSX.Element {
         {/* Search Bar */}
         {!isCollapsed && (
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Icons.Search />
             </div>
             <input
@@ -183,7 +183,7 @@ function Sidebar(): JSX.Element {
                         {item.count}
                       </span>
                       {isActive && (
-                        <div className="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center text-white">
+                        <div className="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
                           <Icons.Plus />
                         </div>
                       )}
@@ -196,7 +196,7 @@ function Sidebar(): JSX.Element {
         </ul>
         
         {/* No results message */}
-        {searchQuery && filteredMenuItems.length === 0 && !isCollapsed && (
+        {searchQuery && filteredMenuItems.length === 0 && (
           <div className="text-center py-8">
             <p className="text-gray-500 dark:text-gray-400 text-sm">
               No items found for "{searchQuery}"
@@ -214,9 +214,7 @@ function Sidebar(): JSX.Element {
           title={isCollapsed ? (darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode') : ''}
         >
           <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'space-x-3'}`}>
-            <div className="text-gray-600 dark:text-gray-300">
-              {darkMode ? <Icons.Sun /> : <Icons.Moon />}
-            </div>
+            {darkMode ? <Icons.Sun /> : <Icons.Moon />}
             {!isCollapsed && <span className="font-medium">{darkMode ? 'Light' : 'Dark'}</span>}
           </div>
           
