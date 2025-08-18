@@ -24,11 +24,11 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate, selectedTim
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
+  const [startTime, setStartTime] = useState('09:00');
+  const [endTime, setEndTime] = useState('10:00');
   const [allDay, setAllDay] = useState(false);
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high' | ''>('');
-  const [category, setCategory] = useState<'work' | 'personal' | 'health' | 'family' | ''>('');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [category, setCategory] = useState<'work' | 'personal' | 'health' | 'family'>('work');
   const [location, setLocation] = useState('');
   const [reminders, setReminders] = useState<number[]>([15]);
   
@@ -36,7 +36,7 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate, selectedTim
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [saving, setSaving] = useState(false);
 
-  // Better date formatting helper
+  // FIXED: Better date formatting helper
   const formatDateForInput = (dateInput?: string | Date) => {
     if (!dateInput) {
       return new Date().toISOString().split('T')[0];
@@ -65,6 +65,13 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate, selectedTim
     return new Date().toISOString().split('T')[0];
   };
 
+  // FIXED: Better time calculation helper
+  const calculateEndTime = (startTimeStr: string) => {
+    const [hour, minute] = startTimeStr.split(':').map(Number);
+    const endHour = (hour + 1) % 24; // Handle wrap around for 23:00 -> 00:00
+    return `${endHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+  };
+
   // Reset form when modal opens/closes or when editing task changes
   useEffect(() => {
     if (isOpen) {
@@ -77,8 +84,8 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate, selectedTim
         setTitle(editingTask.title);
         setDescription(editingTask.description || '');
         setDate(formatDateForInput(editingTask.date));
-        setStartTime(editingTask.startTime || '');
-        setEndTime(editingTask.endTime || '');
+        setStartTime(editingTask.startTime || '09:00');
+        setEndTime(editingTask.endTime || '10:00');
         setAllDay(editingTask.allDay);
         setPriority(editingTask.priority);
         setCategory(editingTask.category);
@@ -89,22 +96,23 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate, selectedTim
         setTitle('');
         setDescription('');
         
-        // Use selected date or current date
+        // FIXED: Use selected date or current date
         const defaultDate = formatDateForInput(selectedDate);
         setDate(defaultDate);
         
-        // CHANGED: Only autofill start time if selectedTime is provided, leave end time blank
+        // FIXED: Use selected time or default time
         if (selectedTime) {
           setStartTime(selectedTime);
+          setEndTime(calculateEndTime(selectedTime));
           setAllDay(false); // If time is selected, it's not all day
         } else {
-          setStartTime(''); // Leave blank if no time selected
+          setStartTime('09:00');
+          setEndTime('10:00');
           setAllDay(false);
         }
         
-        setEndTime(''); // Always leave end time blank
-        setPriority(''); // Leave blank instead of 'medium'
-        setCategory(''); // Leave blank instead of 'work'
+        setPriority('medium');
+        setCategory('work');
         setLocation('');
         setReminders([15]);
       }
@@ -122,15 +130,7 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate, selectedTim
       newErrors.title = 'Title is required';
     }
     
-    if (!category) {
-      newErrors.category = 'Category is required';
-    }
-    
-    if (!priority) {
-      newErrors.priority = 'Priority is required';
-    }
-    
-    if (!allDay && startTime && endTime && startTime >= endTime) {
+    if (!allDay && startTime >= endTime) {
       newErrors.endTime = 'End time must be after start time';
     }
 
@@ -169,8 +169,8 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate, selectedTim
         date: date,
         allDay: allDay,
         completed: false,
-        priority: priority as 'low' | 'medium' | 'high',
-        category: category as 'work' | 'personal' | 'health' | 'family',
+        priority: priority,
+        category: category,
         location: location.trim(),
         reminders: reminders,
         recurring: {
@@ -179,12 +179,10 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate, selectedTim
         }
       };
 
-      // Only add time fields if not all day and times are provided
-      if (!allDay && startTime) {
+      // Only add time fields if not all day
+      if (!allDay) {
         taskData.startTime = startTime;
-        if (endTime) {
-          taskData.endTime = endTime;
-        }
+        taskData.endTime = endTime;
       }
 
       console.log('Task data prepared:', taskData);
@@ -229,11 +227,11 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate, selectedTim
       setTitle('');
       setDescription('');
       setDate(new Date().toISOString().split('T')[0]);
-      setStartTime('');
-      setEndTime('');
+      setStartTime('09:00');
+      setEndTime('10:00');
       setAllDay(false);
-      setPriority('');
-      setCategory('');
+      setPriority('medium');
+      setCategory('work');
       setLocation('');
       setReminders([15]);
       setActiveTab('details');
@@ -267,6 +265,15 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate, selectedTim
     }
   };
 
+  // FIXED: Update end time when start time changes
+  const handleStartTimeChange = (newStartTime: string) => {
+    setStartTime(newStartTime);
+    // Auto-update end time to be 1 hour later if it's currently before or equal to start time
+    if (endTime <= newStartTime) {
+      setEndTime(calculateEndTime(newStartTime));
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -285,11 +292,11 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate, selectedTim
           </button>
         </div>
 
-        {/* Tab Navigation - REMOVED ICONS */}
+        {/* Tab Navigation */}
         <div className="flex border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           {[
-            { id: 'details', label: 'Details' },
-            { id: 'reminders', label: 'Reminders' },
+            { id: 'details', label: 'Details', icon: '📝' },
+            { id: 'reminders', label: 'Reminders', icon: '🔔' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -300,6 +307,7 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate, selectedTim
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
+              <span className="mr-2">{tab.icon}</span>
               {tab.label}
             </button>
           ))}
@@ -382,7 +390,7 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate, selectedTim
                       <input
                         type="time"
                         value={startTime}
-                        onChange={(e) => setStartTime(e.target.value)}
+                        onChange={(e) => handleStartTimeChange(e.target.value)}
                         className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                       />
                     </div>
@@ -405,80 +413,64 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate, selectedTim
                   </div>
                 )}
 
-                {/* Category and Priority - CHANGED TO BLANK BY DEFAULT */}
+                {/* Category and Priority */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Category *
+                      Category
                     </label>
                     <select
                       value={category}
                       onChange={(e) => setCategory(e.target.value as any)}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white ${
-                        errors.category ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                      }`}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                     >
-                      <option value="">Select Category</option>
                       <option value="work">Work</option>
                       <option value="personal">Personal</option>
                       <option value="health">Health</option>
                       <option value="family">Family Events</option>
                     </select>
-                    {errors.category && (
-                      <p className="mt-1 text-sm text-red-500">{errors.category}</p>
-                    )}
                     {/* Category Preview */}
-                    {category && (
-                      <div className="mt-2 flex items-center space-x-2">
-                        <div className={`w-3 h-3 rounded-full ${
-                          category === 'work' ? 'bg-green-500' :
-                          category === 'personal' ? 'bg-yellow-500' :
-                          category === 'health' ? 'bg-red-500' :
-                          'bg-purple-500'
-                        }`}></div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {category === 'work' ? 'Work' :
-                           category === 'personal' ? 'Personal' :
-                           category === 'health' ? 'Health' :
-                           'Family Events'}
-                        </span>
-                      </div>
-                    )}
+                    <div className="mt-2 flex items-center space-x-2">
+                      <div className={`w-3 h-3 rounded-full ${
+                        category === 'work' ? 'bg-green-500' :
+                        category === 'personal' ? 'bg-yellow-500' :
+                        category === 'health' ? 'bg-red-500' :
+                        'bg-purple-500'
+                      }`}></div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {category === 'work' ? 'Work' :
+                         category === 'personal' ? 'Personal' :
+                         category === 'health' ? 'Health' :
+                         'Family Events'}
+                      </span>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Priority *
+                      Priority
                     </label>
                     <select
                       value={priority}
                       onChange={(e) => setPriority(e.target.value as any)}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white ${
-                        errors.priority ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                      }`}
+                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                     >
-                      <option value="">Select Priority</option>
                       <option value="low">Low Priority</option>
                       <option value="medium">Medium Priority</option>
                       <option value="high">High Priority</option>
                     </select>
-                    {errors.priority && (
-                      <p className="mt-1 text-sm text-red-500">{errors.priority}</p>
-                    )}
                     {/* Priority Preview */}
-                    {priority && (
-                      <div className="mt-2 flex items-center space-x-2">
-                        <div className={`w-3 h-3 rounded-full ${
-                          priority === 'high' ? 'bg-red-500' :
-                          priority === 'medium' ? 'bg-yellow-500' :
-                          'bg-green-500'
-                        }`}></div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {priority === 'high' ? 'High Priority' :
-                           priority === 'medium' ? 'Medium Priority' :
-                           'Low Priority'}
-                        </span>
-                      </div>
-                    )}
+                    <div className="mt-2 flex items-center space-x-2">
+                      <div className={`w-3 h-3 rounded-full ${
+                        priority === 'high' ? 'bg-red-500' :
+                        priority === 'medium' ? 'bg-yellow-500' :
+                        'bg-green-500'
+                      }`}></div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {priority === 'high' ? 'High Priority' :
+                         priority === 'medium' ? 'Medium Priority' :
+                         'Low Priority'}
+                      </span>
+                    </div>
                   </div>
                 </div>
 

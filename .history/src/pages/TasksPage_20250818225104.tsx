@@ -209,25 +209,19 @@ function TasksPage() {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-4xl font-bold text-gray-800 mb-2">Tasks</h1>
-              <p className="text-gray-600">Manage Your Tasks and Be Productive!</p>
+              <p className="text-gray-600">Manage your tasks with style and efficiency</p>
             </div>
             <div className="flex gap-4">
               <button
                 onClick={() => setShowCompleted(!showCompleted)}
-                className="px-6 py-3 rounded-xl font-medium transition-all bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2"
+                className="px-6 py-3 rounded-xl font-medium transition-all bg-blue-600 text-white hover:bg-blue-700"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
                 {showCompleted ? 'Show Active' : 'Show Completed'}
               </button>
               <button
                 onClick={() => setShowAddForm(!showAddForm)}
-                className="bg-blue-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
+                className="bg-blue-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
                 Add Task
               </button>
             </div>
@@ -260,7 +254,7 @@ function TasksPage() {
                           value={newTaskDesc}
                           onChange={(e) => handleDescriptionChange(e, setNewTaskDesc)}
                           onKeyDown={(e) => handleDescriptionKeyDown(e, setNewTaskDesc, newTaskDesc)}
-                          placeholder="Task description (optional)..."
+                          placeholder="Task description (optional)... Press Shift+Enter for new line"
                           className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                           disabled={loading}
                           rows={3}

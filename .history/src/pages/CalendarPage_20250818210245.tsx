@@ -701,13 +701,12 @@ function CalendarPage() {
                 return (
                   <div
                     key={index}
-                    className={`p-4 text-center border-l border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 ${
-                      isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                    }`}
-                    onClick={() => handleAllDayClick(date)}
-                  >
-                    <div className={`text-lg font-semibold ${
-isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
+                    className={`p-4 text-center border-l border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 ${isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                   }`}
+                   onClick={() => handleAllDayClick(date)}
+                 >
+                   <div className={`text-lg font-semibold ${
+                     isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
                    }`}>
                      {date.getDate()}
                    </div>

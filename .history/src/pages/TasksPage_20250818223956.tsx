@@ -31,8 +31,6 @@ const CARD_COLORS = [
   'bg-gradient-to-br from-red-50 to-rose-100',          // Blush
 ];
 
-const MAX_DESCRIPTION_LENGTH = 500;
-
 function TasksPage() {
   const { currentUser } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -60,32 +58,6 @@ function TasksPage() {
     });
     return () => unsubscribe();
   }, [currentUser]);
-
-  const handleDescriptionKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, setValue: (value: string) => void, currentValue: string) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      // Submit form on Enter without Shift
-      const form = e.currentTarget.closest('form');
-      if (form) {
-        form.requestSubmit();
-      }
-    } else if (e.key === 'Enter' && e.shiftKey) {
-      // Allow new line on Shift+Enter, but check character limit
-      if (currentValue.length >= MAX_DESCRIPTION_LENGTH) {
-        e.preventDefault();
-        toast.error(`Description cannot exceed ${MAX_DESCRIPTION_LENGTH} characters`);
-      }
-    }
-  };
-
-  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>, setValue: (value: string) => void) => {
-    const value = e.target.value;
-    if (value.length <= MAX_DESCRIPTION_LENGTH) {
-      setValue(value);
-    } else {
-      toast.error(`Description cannot exceed ${MAX_DESCRIPTION_LENGTH} characters`);
-    }
-  };
 
   const addTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -209,25 +181,19 @@ function TasksPage() {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-4xl font-bold text-gray-800 mb-2">Tasks</h1>
-              <p className="text-gray-600">Manage Your Tasks and Be Productive!</p>
+              <p className="text-gray-600">Manage your tasks with style and efficiency</p>
             </div>
             <div className="flex gap-4">
               <button
                 onClick={() => setShowCompleted(!showCompleted)}
-                className="px-6 py-3 rounded-xl font-medium transition-all bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2"
+                className="px-6 py-3 rounded-xl font-medium transition-all bg-blue-600 text-white hover:bg-blue-700"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
                 {showCompleted ? 'Show Active' : 'Show Completed'}
               </button>
               <button
                 onClick={() => setShowAddForm(!showAddForm)}
-                className="bg-blue-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2"
+                className="bg-blue-600 text-white px-6 py-3 rounded-xl font-medium hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
                 Add Task
               </button>
             </div>
@@ -245,7 +211,7 @@ function TasksPage() {
                 <div className="bg-white rounded-2xl shadow-lg p-6 border">
                   <h3 className="text-xl font-semibold mb-4 text-gray-800">Create New Task</h3>
                   <form onSubmit={addTask} className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <input
                         type="text"
                         value={newTaskTitle}
@@ -255,24 +221,18 @@ function TasksPage() {
                         disabled={loading}
                         required
                       />
-                      <div className="relative">
-                        <textarea
-                          value={newTaskDesc}
-                          onChange={(e) => handleDescriptionChange(e, setNewTaskDesc)}
-                          onKeyDown={(e) => handleDescriptionKeyDown(e, setNewTaskDesc, newTaskDesc)}
-                          placeholder="Task description (optional)..."
-                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                          disabled={loading}
-                          rows={3}
-                        />
-                        <div className="absolute bottom-2 right-2 text-xs text-gray-400">
-                          {newTaskDesc.length}/{MAX_DESCRIPTION_LENGTH}
-                        </div>
-                      </div>
+                      <input
+                        type="text"
+                        value={newTaskDesc}
+                        onChange={(e) => setNewTaskDesc(e.target.value)}
+                        placeholder="Task description (optional)..."
+                        className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        disabled={loading}
+                      />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Hours To Complete</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Hours</label>
                         <input
                           type="number"
                           min="1"
@@ -318,7 +278,7 @@ function TasksPage() {
                 <div className="bg-white rounded-2xl shadow-lg p-6 border">
                   <h3 className="text-xl font-semibold mb-4 text-gray-800">Edit Task</h3>
                   <form onSubmit={saveEditTask} className="space-y-4">
-                    <div className="grid grid-cols-1 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <input
                         type="text"
                         value={editTitle}
@@ -328,24 +288,18 @@ function TasksPage() {
                         disabled={loading}
                         required
                       />
-                      <div className="relative">
-                        <textarea
-                          value={editDesc}
-                          onChange={(e) => handleDescriptionChange(e, setEditDesc)}
-                          onKeyDown={(e) => handleDescriptionKeyDown(e, setEditDesc, editDesc)}
-                          placeholder="Task description (optional)..."
-                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                          disabled={loading}
-                          rows={3}
-                        />
-                        <div className="absolute bottom-2 right-2 text-xs text-gray-400">
-                          {editDesc.length}/{MAX_DESCRIPTION_LENGTH}
-                        </div>
-                      </div>
+                      <input
+                        type="text"
+                        value={editDesc}
+                        onChange={(e) => setEditDesc(e.target.value)}
+                        placeholder="Task description (optional)..."
+                        className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        disabled={loading}
+                      />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Hours To Complete</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Hours</label>
                         <input
                           type="number"
                           min="1"
@@ -405,7 +359,7 @@ function TasksPage() {
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.8, y: -20 }}
                   transition={{ delay: index * 0.05 }}
-                  className={`${task.color} rounded-2xl p-6 text-gray-800 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all cursor-pointer relative group flex flex-col min-h-[200px]`}
+                  className={`${task.color} rounded-2xl p-6 text-gray-800 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all cursor-pointer relative group`}
                 >
                   {/* Task Number */}
                   <div className="absolute top-4 left-4">
@@ -438,14 +392,14 @@ function TasksPage() {
                   </div>
 
                   {/* Task Content */}
-                  <div className="mt-8 mb-4 flex-grow">
-                    <h3 className="font-bold text-lg mb-2" title={task.title}>
+                  <div className="mt-8 mb-4">
+                    <h3 className="font-bold text-lg mb-2 line-clamp-2" title={task.title}>
                       {task.title}
                     </h3>
                     {task.description && (
-                      <div className="text-sm text-gray-700 whitespace-pre-wrap break-words" title={task.description}>
+                      <p className="text-sm text-gray-700 line-clamp-2" title={task.description}>
                         {task.description}
-                      </div>
+                      </p>
                     )}
                   </div>
 
@@ -487,7 +441,7 @@ function TasksPage() {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="border-2 border-dashed border-gray-300 rounded-2xl p-6 flex items-center justify-center hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer group min-h-[200px]"
+                  className="border-2 border-dashed border-gray-300 rounded-2xl p-6 flex items-center justify-center hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer group"
                   onClick={() => setShowAddForm(true)}
                 >
                   <div className="text-center">
