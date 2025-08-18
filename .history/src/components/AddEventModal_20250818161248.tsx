@@ -4,7 +4,6 @@ import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { useAuth } from '../utils/AuthContext';
 import { Task } from '../utils/types';
-import toast from 'react-hot-toast';
 
 interface AddEventModalProps {
   isOpen: boolean;
@@ -109,17 +108,15 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
     
     if (!validateForm()) {
       console.log('Form validation failed:', errors);
-      toast.error('Please fix the form errors and try again');
       return;
     }
 
     if (!currentUser) {
-      toast.error('You must be logged in to save events');
+      alert('You must be logged in to save events');
       return;
     }
 
     setSaving(true);
-    const loadingToast = toast.loading(editingTask ? 'Updating event...' : 'Creating event...');
     
     try {
       console.log('Preparing task data...');
@@ -166,8 +163,7 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
         console.log('Updating with data:', updateData);
         await updateDoc(taskDoc, updateData);
         console.log('Task updated successfully!');
-        toast.dismiss(loadingToast);
-        toast.success('Event updated successfully!');
+        alert('Event updated successfully!');
       } else {
         // Create new task (exactly like your test page)
         console.log('Creating new task...');
@@ -181,8 +177,7 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
         console.log('Creating with data:', createData);
         const docRef = await addDoc(userEventsCollection, createData);
         console.log('New task created with ID:', docRef.id);
-        toast.dismiss(loadingToast);
-        toast.success('Event created successfully!');
+        alert('Event created successfully!');
       }
 
       // Reset form and close modal
@@ -207,8 +202,7 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
       console.error('Error object:', error);
       console.error('Error message:', error.message);
       console.error('Error code:', error.code);
-      toast.dismiss(loadingToast);
-      toast.error(`Error saving event: ${error.message}`);
+      alert('Error saving event: ' + error.message);
     } finally {
       setSaving(false);
       console.log('=== FORM SUBMISSION ENDED ===');
@@ -480,11 +474,9 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors font-medium flex items-center space-x-2"
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium disabled:opacity-50 flex items-center space-x-2"
             >
-              {saving && (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              )}
+              {saving && <span className="animate-spin">⟳</span>}
               <span>{editingTask ? 'Update Event' : 'Create Event'}</span>
             </button>
           </div>

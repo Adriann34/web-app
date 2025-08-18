@@ -5,7 +5,6 @@ import { db } from '../utils/firebase';
 import { useAuth } from '../utils/AuthContext';
 import { Task } from '../utils/types';
 import AddEventModal from '../components/AddEventModal';
-import toast from 'react-hot-toast';
 
 function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -18,8 +17,6 @@ function CalendarPage() {
   // Direct Firestore state management (exactly like your test page)
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   // Calendar visibility state
   const [visibleCategories, setVisibleCategories] = useState({
@@ -70,7 +67,6 @@ function CalendarPage() {
       setLoading(false);
     }, (error) => {
       console.error('Error loading tasks:', error);
-      toast.error('Failed to load calendar events');
       setLoading(false);
     });
 
@@ -90,11 +86,10 @@ function CalendarPage() {
   // Save task function (using EXACT same approach as your test page)
   const handleSaveTask = async (task: Task) => {
     if (!currentUser) {
-      toast.error('Please log in to save events');
+      console.error('No user logged in');
       return;
     }
 
-    setSaving(true);
     console.log('Saving task:', task);
     
     try {
@@ -112,7 +107,6 @@ function CalendarPage() {
             updatedAt: new Date().toISOString()
           });
           console.log('Task updated successfully');
-          toast.success('Event updated successfully!');
         } else {
           // ID exists but task not found, create new one
           console.log('Creating new task (ID not found in existing tasks)');
@@ -123,7 +117,6 @@ function CalendarPage() {
             updatedAt: new Date().toISOString()
           });
           console.log('New task created with ID:', docRef.id);
-          toast.success('Event created successfully!');
         }
       } else {
         // Create new task (exactly like your test page)
@@ -135,22 +128,16 @@ function CalendarPage() {
           updatedAt: new Date().toISOString()
         });
         console.log('New task created with ID:', docRef.id);
-        toast.success('Event created successfully!');
       }
     } catch (error) {
       console.error('Error saving task:', error);
-      toast.error('Failed to save event. Please try again.');
-    } finally {
-      setSaving(false);
+      alert('Error saving task. Please try again.');
     }
   };
 
   // Delete task function
   const handleDeleteTask = async (taskId: string) => {
-    if (!currentUser) {
-      toast.error('Please log in to delete events');
-      return;
-    }
+    if (!currentUser) return;
 
     console.log('Deleting task:', taskId);
     
@@ -158,11 +145,9 @@ function CalendarPage() {
       const taskDoc = doc(db, 'users', currentUser.uid, 'events', taskId);
       await deleteDoc(taskDoc);
       console.log('Task deleted successfully');
-      toast.success('Event deleted successfully!');
-      setDeleteConfirm(null);
     } catch (error) {
       console.error('Error deleting task:', error);
-      toast.error('Failed to delete event. Please try again.');
+      alert('Error deleting task. Please try again.');
     }
   };
 
@@ -380,32 +365,6 @@ function CalendarPage() {
 
   return (
     <div className="flex h-screen bg-white dark:bg-gray-900">
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-sm mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Delete Event?</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Are you sure you want to delete this event? This action cannot be undone.
-            </p>
-            <div className="flex space-x-3 justify-end">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDeleteTask(deleteConfirm)}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Left Sidebar */}
       <div className={`${sidebarCollapsed ? 'w-16' : 'w-80'} bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300`}>
         
@@ -640,19 +599,9 @@ function CalendarPage() {
 
             <button 
               onClick={() => openModal()}
-              disabled={saving}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             >
-              {saving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <span>+ Add Event</span>
-                </>
-              )}
+              + Add Event
             </button>
           </div>
         </div>
@@ -698,110 +647,110 @@ function CalendarPage() {
               {Array.from({ length: 24 }, (_, displayIndex) => (
                 <div
                   key={displayIndex}
-                  className="h-16 flex items-start justify-end pr-2 text-xs text-gray-500 dark:text-gray-400">
+                  className="h-16 flex items-start justify-end pr-2 text-xs text-gray-500 dark:text-gray-400"
+                >
+                  {formatHourDisplay(displayIndex)}
+                </div>
+              ))}
+            </div>
 
-                 {formatHourDisplay(displayIndex)}
-               </div>
-             ))}
-           </div>
-
-           {/* Calendar Grid */}
-           <div className="ml-16 grid grid-cols-7 relative">
-             {/* Background Grid */}
-             {Array.from({ length: 24 * 7 }, (_, index) => {
-               const displayHour = Math.floor(index / 7); // 0-23 display positions
-               const day = index % 7;
-               const date = currentWeek[day];
-               
-               return (
-                 <div
-                   key={index}
-                   className="h-16 border-r border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
-                   onClick={() => handleTimeSlotClick(date, displayHour)}
-                 ></div>
-               );
-             })}
-
-             {/* Events */}
-             {currentWeek.map((date, dayIndex) => {
-               const dayTasks = getTasksForDate(formatDate(date));
-               return dayTasks.map((task, taskIndex) => {
-                 if (!task.startTime) return null;
-                 
-                 const top = getEventPosition(task.startTime);
-                 const left = dayIndex * (100 / 7);
-                 
-                 // Calculate height based on duration
-                 let height = 48; // default 1 hour
-                 if (task.endTime) {
-                   const [startHour, startMinute] = task.startTime.split(':').map(Number);
-                   const [endHour, endMinute] = task.endTime.split(':').map(Number);
-                   const durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
-                   height = Math.max(24, (durationMinutes * 64) / 60); // minimum 24px height
-                 }
-                 
-                 // Fixed category color mapping
-                 const categoryColors = {
-                  work: 'bg-green-100 dark:bg-green-900/30 border-green-500 text-green-700 dark:text-green-300',
-                  personal: 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-500 text-yellow-700 dark:text-yellow-300',
-                  health: 'bg-red-100 dark:bg-red-900/30 border-red-500 text-red-700 dark:text-red-300',
-                  family: 'bg-purple-100 dark:bg-purple-900/30 border-purple-500 text-purple-700 dark:text-purple-300'
-                };
-
+            {/* Calendar Grid */}
+            <div className="ml-16 grid grid-cols-7 relative">
+              {/* Background Grid */}
+              {Array.from({ length: 24 * 7 }, (_, index) => {
+                const displayHour = Math.floor(index / 7); // 0-23 display positions
+                const day = index % 7;
+                const date = currentWeek[day];
+                
                 return (
                   <div
-                    key={`${task.id}-${dayIndex}`}
-                    className={`absolute rounded-lg p-2 m-1 border-l-4 cursor-pointer hover:shadow-md transition-shadow group ${categoryColors[task.category]}`}
-                    style={{
-                      top: `${top}px`,
-                      left: `${left}%`,
-                      width: `${100 / 7 - 1}%`,
-                      height: `${height}px`,
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditTask(task);
-                    }}
-                  >
-                    <div className="text-sm font-medium truncate">{task.title}</div>
-                    <div className="text-xs opacity-75">
-                      {task.allDay ? 'All day' : `${task.startTime} - ${task.endTime}`}
-                    </div>
-                    {task.location && (
-                      <div className="text-xs opacity-60 truncate">📍 {task.location}</div>
-                    )}
-                    
-                    {/* Delete button on hover */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteConfirm(task.id);
-                      }}
-                      className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs transition-opacity hover:bg-red-600"
-                    >
-                      ×
-                    </button>
-                  </div>
+                    key={index}
+                    className="h-16 border-r border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
+                    onClick={() => handleTimeSlotClick(date, displayHour)}
+                  ></div>
                 );
-              });
-            })}
-          </div>
-        </div>
-      </div>
-    </div>
+              })}
 
-    {/* Add Event Modal */}
-    <AddEventModal
-      isOpen={isModalOpen}
-      onClose={closeModal}
-      onSave={handleSaveTask}
-      editingTask={editingTask}
-      selectedDate={modalDate || undefined}
-    />
-  </div>
-);
+              {/* Events */}
+              {currentWeek.map((date, dayIndex) => {
+                const dayTasks = getTasksForDate(formatDate(date));
+                return dayTasks.map((task, taskIndex) => {
+                  if (!task.startTime) return null;
+                  
+                  const top = getEventPosition(task.startTime);
+                  const left = dayIndex * (100 / 7);
+                  
+                  // Calculate height based on duration
+                  let height = 48; // default 1 hour
+                  if (task.endTime) {
+                    const [startHour, startMinute] = task.startTime.split(':').map(Number);
+                    const [endHour, endMinute] = task.endTime.split(':').map(Number);
+                    const durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+                    height = Math.max(24, (durationMinutes * 64) / 60); // minimum 24px height
+                  }
+                  
+                  // Fixed category color mapping
+                  const categoryColors = {
+                   work: 'bg-green-100 dark:bg-green-900/30 border-green-500 text-green-700 dark:text-green-300',
+                   personal: 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-500 text-yellow-700 dark:text-yellow-300',
+                   health: 'bg-red-100 dark:bg-red-900/30 border-red-500 text-red-700 dark:text-red-300',
+                   family: 'bg-purple-100 dark:bg-purple-900/30 border-purple-500 text-purple-700 dark:text-purple-300'
+                 };
+
+                 return (
+                   <div
+                     key={`${task.id}-${dayIndex}`}
+                     className={`absolute rounded-lg p-2 m-1 border-l-4 cursor-pointer hover:shadow-md transition-shadow group ${categoryColors[task.category]}`}
+                     style={{
+                       top: `${top}px`,
+                       left: `${left}%`,
+                       width: `${100 / 7 - 1}%`,
+                       height: `${height}px`,
+                     }}
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       handleEditTask(task);
+                     }}
+                   >
+                     <div className="text-sm font-medium truncate">{task.title}</div>
+                     <div className="text-xs opacity-75">
+                       {task.allDay ? 'All day' : `${task.startTime} - ${task.endTime}`}
+                     </div>
+                     {task.location && (
+                       <div className="text-xs opacity-60 truncate">📍 {task.location}</div>
+                     )}
+                     
+                     {/* Delete button on hover */}
+                     <button
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         if (window.confirm('Are you sure you want to delete this event?')) {
+                           handleDeleteTask(task.id);
+                         }
+                       }}
+                       className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs transition-opacity hover:bg-red-600"
+                     >
+                       ×
+                     </button>
+                   </div>
+                 );
+               });
+             })}
+           </div>
+         </div>
+       </div>
+     </div>
+
+     {/* Add Event Modal */}
+     <AddEventModal
+       isOpen={isModalOpen}
+       onClose={closeModal}
+       onSave={handleSaveTask}
+       editingTask={editingTask}
+       selectedDate={modalDate || undefined}
+     />
+   </div>
+ );
 }
 
 export default CalendarPage;
-                  
-                  

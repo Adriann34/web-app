@@ -8,7 +8,7 @@ import Sidebar from './components/Sidebar';
 import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
 import CalendarPage from './pages/CalendarPage';
-import TasksPage from './pages/TasksPage';
+import TasksPage from './pages/TaskPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import TestPage from './pages/TestPage';

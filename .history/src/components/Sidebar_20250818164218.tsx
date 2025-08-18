@@ -56,6 +56,11 @@ const Icons = {
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
     </svg>
+  ),
+  Plus: () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+    </svg>
   )
 };
 
@@ -63,6 +68,7 @@ interface MenuItem {
   path: string;
   label: string;
   icon: keyof typeof Icons;
+  count?: number;
 }
 
 function Sidebar(): JSX.Element {
@@ -75,7 +81,7 @@ function Sidebar(): JSX.Element {
   const menuItems: MenuItem[] = [
     { path: '/dashboard', label: 'Dashboard', icon: 'Home' },
     { path: '/calendar', label: 'Calendar', icon: 'Calendar' },
-    { path: '/tasks', label: 'Tasks', icon: 'Tasks' },
+    { path: '/', label: 'Tasks', icon: 'Tasks', count: 32 },
     { path: '/settings', label: 'Settings', icon: 'Settings' },
   ];
 
@@ -153,7 +159,7 @@ function Sidebar(): JSX.Element {
               <li key={item.path}>
                 <Link
                   to={item.path}
-                  className={`w-full flex items-center px-4 py-4 rounded-2xl transition-all duration-200 group ${
+                  className={`w-full flex items-center justify-between px-4 py-4 rounded-2xl transition-all duration-200 group ${
                     isActive
                       ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25'
                       : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
@@ -166,6 +172,23 @@ function Sidebar(): JSX.Element {
                     </div>
                     {!isCollapsed && <span className="font-medium">{item.label}</span>}
                   </div>
+                  
+                  {item.count && !isCollapsed && (
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        isActive 
+                          ? 'bg-white bg-opacity-20 text-white' 
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                      }`}>
+                        {item.count}
+                      </span>
+                      {isActive && (
+                        <div className="w-6 h-6 bg-white bg-opacity-20 rounded-lg flex items-center justify-center text-white">
+                          <Icons.Plus />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </Link>
               </li>
             );

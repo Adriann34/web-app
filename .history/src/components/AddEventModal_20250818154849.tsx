@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
-import { db } from '../utils/firebase';
-import { useAuth } from '../utils/AuthContext';
-import { Task } from '../utils/types';
-import toast from 'react-hot-toast';
+import { TaskFormData, Task } from '../utils/types';
 
 interface AddEventModalProps {
   isOpen: boolean;
@@ -14,85 +10,95 @@ interface AddEventModalProps {
   selectedDate?: string;
 }
 
-function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventModalProps) {
+function AddEventModal({ isOpen, onClose, onSave, editingTask, selectedDate }: AddEventModalProps) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { currentUser } = useAuth();
   
-  // Form state
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [date, setDate] = useState(selectedDate || new Date().toISOString().split('T')[0]);
-  const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('10:00');
-  const [allDay, setAllDay] = useState(false);
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
-  const [category, setCategory] = useState<'work' | 'personal' | 'health' | 'family'>('work');
-  const [location, setLocation] = useState('');
-  const [reminders, setReminders] = useState<number[]>([15]);
-  
-  const [activeTab, setActiveTab] = useState<'details' | 'reminders' | 'recurring'>('details');
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
-  const [saving, setSaving] = useState(false);
+  const getInitialFormData = (): TaskFormData => ({
+    title: '',
+    description: '',
+    date: selectedDate || new Date().toISOString().split('T')[0],
+    startTime: '09:00',
+    endTime: '10:00',
+    allDay: false,
+    priority: 'medium',
+    category: 'work',
+    location: '',
+    reminders: [15],
+    recurring: {
+      type: 'none',
+      interval: 1,
+      endDate: ''
+    }
+  });
 
-  // Reset form when modal opens/closes or when editing task changes
+  const [formData, setFormData] = useState<TaskFormData>(getInitialFormData);
+  const [activeTab, setActiveTab] = useState<'details' | 'reminders' | 'recurring'>('details');
+  const [errors, setErrors] = useState<Partial<TaskFormData>>({});
+
+  // Update URL when modal opens/closes
   useEffect(() => {
     if (isOpen) {
-      console.log('Modal opened. Editing task:', editingTask);
-      console.log('Selected date:', selectedDate);
-      
+      const params = new URLSearchParams(searchParams);
+      params.set('modal', 'add-event');
+      if (selectedDate) params.set('date', selectedDate);
+      if (editingTask) params.set('edit', editingTask.id);
+      setSearchParams(params);
+    } else {
+      const params = new URLSearchParams(searchParams);
+      params.delete('modal');
+      params.delete('date');
+      params.delete('edit');
+      setSearchParams(params);
+    }
+  }, [isOpen, selectedDate, editingTask, searchParams, setSearchParams]);
+
+  // Handle form data when modal opens
+  useEffect(() => {
+    if (isOpen) {
       if (editingTask) {
         // Populate form when editing
-        setTitle(editingTask.title);
-        setDescription(editingTask.description || '');
-        setDate(editingTask.date);
-        setStartTime(editingTask.startTime || '09:00');
-        setEndTime(editingTask.endTime || '10:00');
-        setAllDay(editingTask.allDay);
-        setPriority(editingTask.priority);
-        setCategory(editingTask.category);
-        setLocation(editingTask.location || '');
-        setReminders(editingTask.reminders || [15]);
+        setFormData({
+          title: editingTask.title,
+          description: editingTask.description || '',
+          date: editingTask.date,
+          startTime: editingTask.startTime || '09:00',
+          endTime: editingTask.endTime || '10:00',
+          allDay: editingTask.allDay,
+          priority: editingTask.priority,
+          category: editingTask.category,
+          location: editingTask.location || '',
+          reminders: editingTask.reminders || [15],
+          recurring: {
+            type: editingTask.recurring?.type || 'none',
+            interval: editingTask.recurring?.interval || 1,
+            endDate: editingTask.recurring?.endDate || ''
+          }
+        });
       } else {
-        // Reset form for new event
-        setTitle('');
-        setDescription('');
-        setDate(selectedDate || new Date().toISOString().split('T')[0]);
-        setStartTime('09:00');
-        setEndTime('10:00');
-        setAllDay(false);
-        setPriority('medium');
-        setCategory('work');
-        setLocation('');
-        setReminders([15]);
+        // For new events, always start with clean slate
+        const initialData = getInitialFormData();
+        // Update the date if selectedDate is provided
+        if (selectedDate) {
+          initialData.date = selectedDate;
+        }
+        setFormData(initialData);
       }
-      
-      // Reset to details tab and clear errors
+      // Reset to details tab when opening
       setActiveTab('details');
+      // Clear any errors
       setErrors({});
     }
   }, [isOpen, editingTask, selectedDate]);
 
-  // Handle URL time parameter
-  useEffect(() => {
-    const timeParam = searchParams.get('time');
-    if (timeParam && !editingTask) {
-      setStartTime(timeParam);
-      // Auto-set end time to 1 hour later
-      const [hour, minute] = timeParam.split(':').map(Number);
-      const endHour = hour + 1;
-      setEndTime(`${endHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`);
-    }
-  }, [searchParams, editingTask]);
-
   const validateForm = (): boolean => {
-    const newErrors: {[key: string]: string} = {};
+    const newErrors: Partial<TaskFormData> = {};
     
-    if (!title.trim()) {
+    if (!formData.title.trim()) {
       newErrors.title = 'Title is required';
     }
     
-    if (!allDay && startTime >= endTime) {
+    if (!formData.allDay && formData.startTime >= formData.endTime) {
       newErrors.endTime = 'End time must be after start time';
     }
 
@@ -100,132 +106,48 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('=== FORM SUBMISSION STARTED ===');
-    console.log('Current user:', currentUser);
-    console.log('Form validation...');
+    if (!validateForm()) return;
+
+    const now = new Date().toISOString();
+    const task: Task = {
+      id: editingTask?.id || `task_${Date.now()}`,
+      title: formData.title,
+      description: formData.description,
+      date: formData.date,
+      startTime: formData.allDay ? undefined : formData.startTime,
+      endTime: formData.allDay ? undefined : formData.endTime,
+      allDay: formData.allDay,
+      completed: editingTask?.completed || false,
+      priority: formData.priority,
+      category: formData.category,
+      location: formData.location,
+      reminders: formData.reminders,
+      recurring: {
+        type: formData.recurring.type,
+        interval: formData.recurring.interval,
+        endDate: formData.recurring.endDate || undefined
+      },
+      createdAt: editingTask?.createdAt || now,
+      updatedAt: now
+    };
+
+    console.log('AddEventModal: Submitting task:', task);
+    onSave(task);
     
-    if (!validateForm()) {
-      console.log('Form validation failed:', errors);
-      toast.error('Please fix the form errors and try again');
-      return;
-    }
-
-    if (!currentUser) {
-      toast.error('You must be logged in to save events');
-      return;
-    }
-
-    setSaving(true);
-    const loadingToast = toast.loading(editingTask ? 'Updating event...' : 'Creating event...');
+    // Reset form to clean slate after successful save
+    setFormData(getInitialFormData());
+    setActiveTab('details');
+    setErrors({});
     
-    try {
-      console.log('Preparing task data...');
-      
-      // Create the task object properly with conditional properties
-      const taskData: any = {
-        title: title.trim(),
-        description: description.trim(),
-        date: date,
-        allDay: allDay,
-        completed: false,
-        priority: priority,
-        category: category,
-        location: location.trim(),
-        reminders: reminders,
-        recurring: {
-          type: 'none',
-          interval: 1
-          // NO endDate field at all if it would be undefined
-        }
-      };
-
-      // Only add time fields if not all day
-      if (!allDay) {
-        taskData.startTime = startTime;
-        taskData.endTime = endTime;
-      }
-
-      console.log('Task data prepared:', taskData);
-
-      const userEventsCollection = collection(db, 'users', currentUser.uid, 'events');
-      console.log('Collection reference created');
-
-      if (editingTask && editingTask.id) {
-        // Update existing task
-        console.log('Updating existing task with ID:', editingTask.id);
-        const taskDoc = doc(db, 'users', currentUser.uid, 'events', editingTask.id);
-        
-        const updateData = {
-          ...taskData,
-          updatedAt: new Date().toISOString()
-        };
-        
-        console.log('Updating with data:', updateData);
-        await updateDoc(taskDoc, updateData);
-        console.log('Task updated successfully!');
-        toast.dismiss(loadingToast);
-        toast.success('Event updated successfully!');
-      } else {
-        // Create new task (exactly like your test page)
-        console.log('Creating new task...');
-        
-        const createData = {
-          ...taskData,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        
-        console.log('Creating with data:', createData);
-        const docRef = await addDoc(userEventsCollection, createData);
-        console.log('New task created with ID:', docRef.id);
-        toast.dismiss(loadingToast);
-        toast.success('Event created successfully!');
-      }
-
-      // Reset form and close modal
-      console.log('Resetting form and closing modal...');
-      setTitle('');
-      setDescription('');
-      setDate(new Date().toISOString().split('T')[0]);
-      setStartTime('09:00');
-      setEndTime('10:00');
-      setAllDay(false);
-      setPriority('medium');
-      setCategory('work');
-      setLocation('');
-      setReminders([15]);
-      setActiveTab('details');
-      setErrors({});
-      
-      onClose();
-      
-    } catch (error: any) {
-      console.error('=== ERROR SAVING TASK ===');
-      console.error('Error object:', error);
-      console.error('Error message:', error.message);
-      console.error('Error code:', error.code);
-      toast.dismiss(loadingToast);
-      toast.error(`Error saving event: ${error.message}`);
-    } finally {
-      setSaving(false);
-      console.log('=== FORM SUBMISSION ENDED ===');
-    }
-  };
-
-  const handleClose = () => {
-    console.log('Closing modal...');
     onClose();
   };
 
-  const handleReminderChange = (minutes: number, checked: boolean) => {
-    if (checked) {
-      setReminders(prev => [...prev, minutes].sort((a, b) => a - b));
-    } else {
-      setReminders(prev => prev.filter(r => r !== minutes));
-    }
+  const handleClose = () => {
+    onClose();
+    navigate('/calendar', { replace: true });
   };
 
   if (!isOpen) return null;
@@ -251,6 +173,7 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
           {[
             { id: 'details', label: 'Details', icon: '📝' },
             { id: 'reminders', label: 'Reminders', icon: '🔔' },
+            { id: 'recurring', label: 'Recurring', icon: '🔄' }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -280,8 +203,8 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
                   </label>
                   <input
                     type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
+                    value={formData.title}
+                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
                       errors.title ? 'border-red-500' : 'border-gray-300'
                     }`}
@@ -298,15 +221,15 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
                     Description
                   </label>
                   <textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     rows={3}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                     placeholder="Add a description..."
                   />
                 </div>
 
-                {/* Date and All Day */}
+                {/* Date and Time */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -314,8 +237,8 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
                     </label>
                     <input
                       type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
+                      value={formData.date}
+                      onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
                       className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                     />
                   </div>
@@ -324,8 +247,8 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
                     <label className="flex items-center space-x-2">
                       <input
                         type="checkbox"
-                        checked={allDay}
-                        onChange={(e) => setAllDay(e.target.checked)}
+                        checked={formData.allDay}
+                        onChange={(e) => setFormData(prev => ({ ...prev, allDay: e.target.checked }))}
                         className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                       />
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">All Day</span>
@@ -334,7 +257,7 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
                 </div>
 
                 {/* Time Fields */}
-                {!allDay && (
+                {!formData.allDay && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -342,8 +265,8 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
                       </label>
                       <input
                         type="time"
-                        value={startTime}
-                        onChange={(e) => setStartTime(e.target.value)}
+                        value={formData.startTime}
+                        onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
                         className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                       />
                     </div>
@@ -353,8 +276,8 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
                       </label>
                       <input
                         type="time"
-                        value={endTime}
-                        onChange={(e) => setEndTime(e.target.value)}
+                        value={formData.endTime}
+                        onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
                         className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white ${
                           errors.endTime ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                         }`}
@@ -373,8 +296,8 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
                       Category
                     </label>
                     <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value as any)}
+                      value={formData.category}
+                      onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as any }))}
                       className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                     >
                       <option value="work">Work</option>
@@ -385,15 +308,15 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
                     {/* Category Preview */}
                     <div className="mt-2 flex items-center space-x-2">
                       <div className={`w-3 h-3 rounded-full ${
-                        category === 'work' ? 'bg-green-500' :
-                        category === 'personal' ? 'bg-yellow-500' :
-                        category === 'health' ? 'bg-red-500' :
+                        formData.category === 'work' ? 'bg-green-500' :
+                        formData.category === 'personal' ? 'bg-yellow-500' :
+                        formData.category === 'health' ? 'bg-red-500' :
                         'bg-purple-500'
                       }`}></div>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {category === 'work' ? 'Work' :
-                         category === 'personal' ? 'Personal' :
-                         category === 'health' ? 'Health' :
+                        {formData.category === 'work' ? 'Work' :
+                         formData.category === 'personal' ? 'Personal' :
+                         formData.category === 'health' ? 'Health' :
                          'Family Events'}
                       </span>
                     </div>
@@ -403,8 +326,8 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
                       Priority
                     </label>
                     <select
-                      value={priority}
-                      onChange={(e) => setPriority(e.target.value as any)}
+                      value={formData.priority}
+                      onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value as any }))}
                       className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                     >
                       <option value="low">Low Priority</option>
@@ -414,13 +337,13 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
                     {/* Priority Preview */}
                     <div className="mt-2 flex items-center space-x-2">
                       <div className={`w-3 h-3 rounded-full ${
-                        priority === 'high' ? 'bg-red-500' :
-                        priority === 'medium' ? 'bg-yellow-500' :
+                        formData.priority === 'high' ? 'bg-red-500' :
+                        formData.priority === 'medium' ? 'bg-yellow-500' :
                         'bg-green-500'
                       }`}></div>
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {priority === 'high' ? 'High Priority' :
-                         priority === 'medium' ? 'Medium Priority' :
+                        {formData.priority === 'high' ? 'High Priority' :
+                         formData.priority === 'medium' ? 'Medium Priority' :
                          'Low Priority'}
                       </span>
                     </div>
@@ -434,8 +357,8 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
                   </label>
                   <input
                     type="text"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
+                    value={formData.location}
+                    onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                     placeholder="Add location..."
                   />
@@ -452,8 +375,20 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
                     <label key={minutes} className="flex items-center space-x-3">
                       <input
                         type="checkbox"
-                        checked={reminders.includes(minutes)}
-                        onChange={(e) => handleReminderChange(minutes, e.target.checked)}
+                        checked={formData.reminders.includes(minutes)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData(prev => ({
+                              ...prev,
+                              reminders: [...prev.reminders, minutes]
+                            }));
+                          } else {
+                            setFormData(prev => ({
+                              ...prev,
+                              reminders: prev.reminders.filter(r => r !== minutes)
+                            }));
+                          }
+                        }}
                         className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                       />
                       <span className="text-gray-700 dark:text-gray-300">
@@ -465,6 +400,76 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
                 </div>
               </div>
             )}
+
+            {/* Recurring Tab */}
+            {activeTab === 'recurring' && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Recurring Event</h3>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Repeat
+                  </label>
+                  <select
+                    value={formData.recurring.type}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      recurring: { ...prev.recurring, type: e.target.value as any }
+                    }))}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  >
+                    <option value="none">Does not repeat</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                </div>
+
+                {formData.recurring.type !== 'none' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Repeat Every
+                      </label>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="number"
+                          min="1"
+                          value={formData.recurring.interval}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            recurring: { ...prev.recurring, interval: parseInt(e.target.value) || 1 }
+                          }))}
+                          className="w-20 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                        />
+                        <span className="text-gray-700 dark:text-gray-300">
+                          {formData.recurring.type === 'daily' && 'day(s)'}
+                          {formData.recurring.type === 'weekly' && 'week(s)'}
+                          {formData.recurring.type === 'monthly' && 'month(s)'}
+                          {formData.recurring.type === 'yearly' && 'year(s)'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        End Date (Optional)
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.recurring.endDate}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          recurring: { ...prev.recurring, endDate: e.target.value }
+                        }))}
+                        className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Footer - Fixed at bottom */}
@@ -472,20 +477,15 @@ function AddEventModal({ isOpen, onClose, editingTask, selectedDate }: AddEventM
             <button
               type="button"
               onClick={handleClose}
-              disabled={saving}
-              className="px-6 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
+              className="px-6 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={saving}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors font-medium flex items-center space-x-2"
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
             >
-              {saving && (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              )}
-              <span>{editingTask ? 'Update Event' : 'Create Event'}</span>
+              {editingTask ? 'Update Event' : 'Create Event'}
             </button>
           </div>
         </form>

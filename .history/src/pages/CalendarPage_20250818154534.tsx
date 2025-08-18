@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
-import { db } from '../utils/firebase';
-import { useAuth } from '../utils/AuthContext';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Task } from '../utils/types';
+import { useFirestoreTasks } from '../utils/useFirestoreTasks';
 import AddEventModal from '../components/AddEventModal';
-import toast from 'react-hot-toast';
 
 function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -13,13 +10,10 @@ function CalendarPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const { currentUser } = useAuth();
+  const navigate = useNavigate();
   
-  // Direct Firestore state management (exactly like your test page)
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  // Use Firestore hook instead of local state
+  const { tasks, loading, saveTask, deleteTask } = useFirestoreTasks();
 
   // Calendar visibility state
   const [visibleCategories, setVisibleCategories] = useState({
@@ -43,40 +37,6 @@ function CalendarPage() {
   const editTaskId = searchParams.get('edit');
   const modalDate = searchParams.get('date');
 
-  // Load tasks from Firestore (using the EXACT same approach as your test page)
-  useEffect(() => {
-    if (!currentUser) {
-      setLoading(false);
-      return;
-    }
-
-    console.log('Setting up Firestore listener for user:', currentUser.email);
-    const userEventsCollection = collection(db, 'users', currentUser.uid, 'events');
-    
-    // Set up real-time listener (just like your test page)
-    const unsubscribe = onSnapshot(userEventsCollection, (snapshot) => {
-      console.log('Firestore snapshot received, docs count:', snapshot.docs.length);
-      const loadedTasks: Task[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        console.log('Loading task:', doc.id, data);
-        loadedTasks.push({
-          id: doc.id,
-          ...data
-        } as Task);
-      });
-      console.log('Total tasks loaded:', loadedTasks.length);
-      setTasks(loadedTasks);
-      setLoading(false);
-    }, (error) => {
-      console.error('Error loading tasks:', error);
-      toast.error('Failed to load calendar events');
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [currentUser]);
-
   // Set editing task when URL changes
   useEffect(() => {
     if (editTaskId) {
@@ -86,85 +46,6 @@ function CalendarPage() {
       setEditingTask(null);
     }
   }, [editTaskId, tasks]);
-
-  // Save task function (using EXACT same approach as your test page)
-  const handleSaveTask = async (task: Task) => {
-    if (!currentUser) {
-      toast.error('Please log in to save events');
-      return;
-    }
-
-    setSaving(true);
-    console.log('Saving task:', task);
-    
-    try {
-      const userEventsCollection = collection(db, 'users', currentUser.uid, 'events');
-      
-      if (task.id && task.id.startsWith('task_')) {
-        // This is an existing task being updated
-        const existingTask = tasks.find(t => t.id === task.id);
-        if (existingTask) {
-          console.log('Updating existing task:', task.id);
-          const taskDoc = doc(db, 'users', currentUser.uid, 'events', task.id);
-          const { id, ...taskData } = task;
-          await updateDoc(taskDoc, {
-            ...taskData,
-            updatedAt: new Date().toISOString()
-          });
-          console.log('Task updated successfully');
-          toast.success('Event updated successfully!');
-        } else {
-          // ID exists but task not found, create new one
-          console.log('Creating new task (ID not found in existing tasks)');
-          const { id, ...taskData } = task;
-          const docRef = await addDoc(userEventsCollection, {
-            ...taskData,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          });
-          console.log('New task created with ID:', docRef.id);
-          toast.success('Event created successfully!');
-        }
-      } else {
-        // Create new task (exactly like your test page)
-        console.log('Creating new task');
-        const { id, ...taskData } = task; // Remove the temporary ID
-        const docRef = await addDoc(userEventsCollection, {
-          ...taskData,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        });
-        console.log('New task created with ID:', docRef.id);
-        toast.success('Event created successfully!');
-      }
-    } catch (error) {
-      console.error('Error saving task:', error);
-      toast.error('Failed to save event. Please try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Delete task function
-  const handleDeleteTask = async (taskId: string) => {
-    if (!currentUser) {
-      toast.error('Please log in to delete events');
-      return;
-    }
-
-    console.log('Deleting task:', taskId);
-    
-    try {
-      const taskDoc = doc(db, 'users', currentUser.uid, 'events', taskId);
-      await deleteDoc(taskDoc);
-      console.log('Task deleted successfully');
-      toast.success('Event deleted successfully!');
-      setDeleteConfirm(null);
-    } catch (error) {
-      console.error('Error deleting task:', error);
-      toast.error('Failed to delete event. Please try again.');
-    }
-  };
 
   const today = new Date();
   const year = currentDate.getFullYear();
@@ -285,11 +166,31 @@ function CalendarPage() {
     setSearchParams(params);
   };
 
+  const handleSaveTask = async (task: Task) => {
+    try {
+      console.log('CalendarPage: Saving task:', task);
+      await saveTask(task);
+      console.log('CalendarPage: Task saved successfully');
+    } catch (error) {
+      console.error('CalendarPage: Error saving task:', error);
+      // You could add toast notification here
+    }
+  };
+
   const handleEditTask = (task: Task) => {
     const params = new URLSearchParams(searchParams);
     params.set('modal', 'add-event');
     params.set('edit', task.id);
     setSearchParams(params);
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      await deleteTask(taskId);
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      // You could add toast notification here
+    }
   };
 
   // Time slot click handler for creating events
@@ -364,48 +265,8 @@ function CalendarPage() {
     );
   }
 
-  // Show login prompt if not authenticated
-  if (!currentUser) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="text-lg text-gray-600 dark:text-gray-400 mb-4">Please log in to access your calendar</div>
-          <a href="/login" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
-            Go to Login
-          </a>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-screen bg-white dark:bg-gray-900">
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-sm mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Delete Event?</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Are you sure you want to delete this event? This action cannot be undone.
-            </p>
-            <div className="flex space-x-3 justify-end">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDeleteTask(deleteConfirm)}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Left Sidebar */}
       <div className={`${sidebarCollapsed ? 'w-16' : 'w-80'} bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300`}>
         
@@ -640,19 +501,9 @@ function CalendarPage() {
 
             <button 
               onClick={() => openModal()}
-              disabled={saving}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             >
-              {saving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <span>+ Add Event</span>
-                </>
-              )}
+              + Add Event
             </button>
           </div>
         </div>
@@ -698,110 +549,108 @@ function CalendarPage() {
               {Array.from({ length: 24 }, (_, displayIndex) => (
                 <div
                   key={displayIndex}
-                  className="h-16 flex items-start justify-end pr-2 text-xs text-gray-500 dark:text-gray-400">
+                  className="h-16 flex items-start justify-end pr-2 text-xs text-gray-500 dark:text-gray-400"
+                >
+                  {formatHourDisplay(displayIndex)}
+                </div>
+              ))}
+            </div>
 
-                 {formatHourDisplay(displayIndex)}
-               </div>
-             ))}
-           </div>
-
-           {/* Calendar Grid */}
-           <div className="ml-16 grid grid-cols-7 relative">
-             {/* Background Grid */}
-             {Array.from({ length: 24 * 7 }, (_, index) => {
-               const displayHour = Math.floor(index / 7); // 0-23 display positions
-               const day = index % 7;
-               const date = currentWeek[day];
-               
-               return (
-                 <div
-                   key={index}
-                   className="h-16 border-r border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
-                   onClick={() => handleTimeSlotClick(date, displayHour)}
-                 ></div>
-               );
-             })}
-
-             {/* Events */}
-             {currentWeek.map((date, dayIndex) => {
-               const dayTasks = getTasksForDate(formatDate(date));
-               return dayTasks.map((task, taskIndex) => {
-                 if (!task.startTime) return null;
-                 
-                 const top = getEventPosition(task.startTime);
-                 const left = dayIndex * (100 / 7);
-                 
-                 // Calculate height based on duration
-                 let height = 48; // default 1 hour
-                 if (task.endTime) {
-                   const [startHour, startMinute] = task.startTime.split(':').map(Number);
-                   const [endHour, endMinute] = task.endTime.split(':').map(Number);
-                   const durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
-                   height = Math.max(24, (durationMinutes * 64) / 60); // minimum 24px height
-                 }
-                 
-                 // Fixed category color mapping
-                 const categoryColors = {
-                  work: 'bg-green-100 dark:bg-green-900/30 border-green-500 text-green-700 dark:text-green-300',
-                  personal: 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-500 text-yellow-700 dark:text-yellow-300',
-                  health: 'bg-red-100 dark:bg-red-900/30 border-red-500 text-red-700 dark:text-red-300',
-                  family: 'bg-purple-100 dark:bg-purple-900/30 border-purple-500 text-purple-700 dark:text-purple-300'
-                };
-
+            {/* Calendar Grid */}
+            <div className="ml-16 grid grid-cols-7 relative">
+              {/* Background Grid */}
+              {Array.from({ length: 24 * 7 }, (_, index) => {
+                const displayHour = Math.floor(index / 7); // 0-23 display positions
+                const day = index % 7;
+                const date = currentWeek[day];
+                
                 return (
                   <div
-                    key={`${task.id}-${dayIndex}`}
-                    className={`absolute rounded-lg p-2 m-1 border-l-4 cursor-pointer hover:shadow-md transition-shadow group ${categoryColors[task.category]}`}
-                    style={{
-                      top: `${top}px`,
-                      left: `${left}%`,
-                      width: `${100 / 7 - 1}%`,
-                      height: `${height}px`,
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditTask(task);
-                    }}
-                  >
-                    <div className="text-sm font-medium truncate">{task.title}</div>
-                    <div className="text-xs opacity-75">
-                      {task.allDay ? 'All day' : `${task.startTime} - ${task.endTime}`}
-                    </div>
-                    {task.location && (
-                      <div className="text-xs opacity-60 truncate">📍 {task.location}</div>
-                    )}
-                    
-                    {/* Delete button on hover */}
-                    <button
+                    key={index}
+                    className="h-16 border-r border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
+                    onClick={() => handleTimeSlotClick(date, displayHour)}
+                  ></div>
+                );
+              })}
+
+              {/* Events */}
+              {currentWeek.map((date, dayIndex) => {
+                const dayTasks = getTasksForDate(formatDate(date));
+                return dayTasks.map((task, taskIndex) => {
+                  if (!task.startTime) return null;
+                  
+                  const top = getEventPosition(task.startTime);
+                  const left = dayIndex * (100 / 7);
+                  
+                  // Calculate height based on duration
+                  let height = 48; // default 1 hour
+                  if (task.endTime) {
+                    const [startHour, startMinute] = task.startTime.split(':').map(Number);
+                    const [endHour, endMinute] = task.endTime.split(':').map(Number);
+                    const durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+                    height = Math.max(24, (durationMinutes * 64) / 60); // minimum 24px height
+                  }
+                  
+                  // Fixed category color mapping
+                  const categoryColors = {
+                    work: 'bg-green-100 dark:bg-green-900/30 border-green-500 text-green-700 dark:text-green-300',
+                    personal: 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-500 text-yellow-700 dark:text-yellow-300',
+                    health: 'bg-red-100 dark:bg-red-900/30 border-red-500 text-red-700 dark:text-red-300',
+                    family: 'bg-purple-100 dark:bg-purple-900/30 border-purple-500 text-purple-700 dark:text-purple-300'
+                  };
+
+                  return (
+                    <div
+                      key={`${task.id}-${dayIndex}`}
+                      className={`absolute rounded-lg p-2 m-1 border-l-4 cursor-pointer hover:shadow-md transition-shadow group ${categoryColors[task.category]}`}
+                      style={{
+                        top: `${top}px`,
+                        left: `${left}%`,
+                        width: `${100 / 7 - 1}%`,
+                        height: `${height}px`,
+                      }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        setDeleteConfirm(task.id);
+                        handleEditTask(task);
                       }}
-                      className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs transition-opacity hover:bg-red-600"
                     >
-                      ×
-                    </button>
-                  </div>
-                );
-              });
-            })}
+                      <div className="text-sm font-medium truncate">{task.title}</div>
+                      <div className="text-xs opacity-75">
+                        {task.allDay ? 'All day' : `${task.startTime} - ${task.endTime}`}
+                      </div>
+                      {task.location && (
+                        <div className="text-xs opacity-60 truncate">📍 {task.location}</div>
+                      )}
+                      
+                      {/* Delete button on hover */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteTask(task.id);
+                        }}
+                        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs transition-opacity"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                });
+              })}
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    {/* Add Event Modal */}
-    <AddEventModal
-      isOpen={isModalOpen}
-      onClose={closeModal}
-      onSave={handleSaveTask}
-      editingTask={editingTask}
-      selectedDate={modalDate || undefined}
-    />
-  </div>
-);
+      {/* Add Event Modal */}
+      <AddEventModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        onSave={handleSaveTask}
+        editingTask={editingTask}
+        selectedDate={modalDate || undefined}
+      />
+    </div>
+  );
 }
 
 export default CalendarPage;
-                  
-                  

@@ -8,7 +8,6 @@ import Sidebar from './components/Sidebar';
 import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
 import CalendarPage from './pages/CalendarPage';
-import TasksPage from './pages/TasksPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import TestPage from './pages/TestPage';
@@ -22,7 +21,6 @@ function AppLayout() {
           <Route path="/" element={<HomePage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/tasks" element={<TasksPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/test" element={<TestPage />} />
         </Routes>
@@ -44,7 +42,7 @@ function AppContent() {
           </ProtectedRoute>
         } />
       </Routes>
-
+      
       {/* Toast Notifications with Dark Mode Support */}
       <Toaster
         position="top-right"
