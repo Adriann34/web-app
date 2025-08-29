@@ -195,21 +195,21 @@ function TasksPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 0h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Please log in to view tasks</h2>
+          <h2 className="text-2xl font-bold text-gray-800">Please log in to view tasks</h2>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 min-h-screen">
+    <div className="bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-2">Tasks</h1>
-              <p className="text-gray-600 dark:text-gray-400">Manage Your Tasks and Be Productive!</p>
+              <h1 className="text-4xl font-bold text-gray-800 mb-2">Tasks</h1>
+              <p className="text-gray-600">Manage Your Tasks and Be Productive!</p>
             </div>
             <div className="flex gap-4">
               <button
@@ -242,8 +242,8 @@ function TasksPage() {
                 exit={{ opacity: 0, y: -20 }}
                 className="mb-8"
               >
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-                  <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Create New Task</h3>
+                <div className="bg-white rounded-2xl shadow-lg p-6 border">
+                  <h3 className="text-xl font-semibold mb-4 text-gray-800">Create New Task</h3>
                   <form onSubmit={addTask} className="space-y-4">
                     <div className="grid grid-cols-1 gap-4">
                       <input
@@ -251,7 +251,7 @@ function TasksPage() {
                         value={newTaskTitle}
                         onChange={(e) => setNewTaskTitle(e.target.value)}
                         placeholder="Task title..."
-                        className="px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         disabled={loading}
                         required
                       />
@@ -261,18 +261,18 @@ function TasksPage() {
                           onChange={(e) => handleDescriptionChange(e, setNewTaskDesc)}
                           onKeyDown={(e) => handleDescriptionKeyDown(e, setNewTaskDesc, newTaskDesc)}
                           placeholder="Task description (optional)..."
-                          className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                           disabled={loading}
                           rows={3}
                         />
-                        <div className="absolute bottom-2 right-2 text-xs text-gray-400 dark:text-gray-500">
+                        <div className="absolute bottom-2 right-2 text-xs text-gray-400">
                           {newTaskDesc.length}/{MAX_DESCRIPTION_LENGTH}
                         </div>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estimated Hours To Complete</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Hours To Complete</label>
                         <input
                           type="number"
                           min="1"
@@ -315,8 +315,8 @@ function TasksPage() {
                 exit={{ opacity: 0, y: -20 }}
                 className="mb-8"
               >
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-                  <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Edit Task</h3>
+                <div className="bg-white rounded-2xl shadow-lg p-6 border">
+                  <h3 className="text-xl font-semibold mb-4 text-gray-800">Edit Task</h3>
                   <form onSubmit={saveEditTask} className="space-y-4">
                     <div className="grid grid-cols-1 gap-4">
                       <input
@@ -324,7 +324,7 @@ function TasksPage() {
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
                         placeholder="Task title..."
-                        className="px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         disabled={loading}
                         required
                       />
@@ -334,18 +334,18 @@ function TasksPage() {
                           onChange={(e) => handleDescriptionChange(e, setEditDesc)}
                           onKeyDown={(e) => handleDescriptionKeyDown(e, setEditDesc, editDesc)}
                           placeholder="Task description (optional)..."
-                          className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                           disabled={loading}
                           rows={3}
                         />
-                        <div className="absolute bottom-2 right-2 text-xs text-gray-400 dark:text-gray-500">
+                        <div className="absolute bottom-2 right-2 text-xs text-gray-400">
                           {editDesc.length}/{MAX_DESCRIPTION_LENGTH}
                         </div>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estimated Hours To Complete</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Hours To Complete</label>
                         <input
                           type="number"
                           min="1"
@@ -381,7 +381,7 @@ function TasksPage() {
 
           {/* Section Headers */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
+            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
               {showCompleted ? (
                 <>Completed <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">{completedTasks.length}</span></>
               ) : (
@@ -389,7 +389,7 @@ function TasksPage() {
               )}
             </h2>
             {!showCompleted && (
-              <div className="text-sm text-gray-500 dark:text-gray-400">
+              <div className="text-sm text-gray-500">
                 Total hours: {pendingTasks.reduce((sum, task) => sum + task.estimatedHours, 0)}h
               </div>
             )}
@@ -405,11 +405,12 @@ function TasksPage() {
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.8, y: -20 }}
                   transition={{ delay: index * 0.05 }}
-                  className={`${task.color} rounded-2xl p-6 text-gray-800 dark:text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all cursor-pointer relative group flex flex-col min-h-[200px]`}
+                  className={`${task.color} rounded-2xl p-6 text-gray-800 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all cursor-pointer relative group flex flex-col min-h-[200px]`}
                 >
                   {/* Task Number */}
                   <div className="absolute top-4 left-4">
-                    <span className="text-lg font-bold text-gray-700">#{(index + 1).toString().padStart(2, '0')}</span>                  </div>
+                    <span className="text-lg font-bold text-gray-600">#{(index + 1).toString().padStart(2, '0')}</span>
+                  </div>
 
                   {/* Action Buttons */}
                   <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -438,7 +439,7 @@ function TasksPage() {
 
                   {/* Task Content */}
                   <div className="mt-8 mb-4 flex-grow">
-                    <h3 className="font-bold text-lg mb-2 text-gray-800" title={task.title}>
+                    <h3 className="font-bold text-lg mb-2" title={task.title}>
                       {task.title}
                     </h3>
                     {task.description && (
@@ -450,14 +451,14 @@ function TasksPage() {
 
                   {/* Task Meta */}
                   <div className="flex items-center justify-between mt-auto">
-                    <div className="text-sm font-medium text-gray-800">
+                    <div className="text-sm font-medium text-gray-700">
                       {task.estimatedHours} hr{task.estimatedHours !== 1 ? 's' : ''}
                     </div>
                     
                     <button
                       onClick={() => toggleTask(task.id, task.completed)}
-                      className={`w-8 h-8 rounded-full border-2 border-gray-700 flex items-center justify-center transition-all hover:scale-110 z-10 ${
-                        task.completed ? 'bg-gray-700 text-white' : 'bg-transparent hover:bg-gray-700 hover:bg-opacity-20'
+                      className={`w-8 h-8 rounded-full border-2 border-gray-600 flex items-center justify-center transition-all hover:scale-110 z-10 ${
+                        task.completed ? 'bg-gray-600 text-white' : 'bg-transparent hover:bg-gray-600 hover:bg-opacity-20'
                       }`}
                     >
                       {task.completed && (
@@ -486,7 +487,7 @@ function TasksPage() {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl p-6 flex items-center justify-center hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 transition-all cursor-pointer group min-h-[200px]"
+                  className="border-2 border-dashed border-gray-300 rounded-2xl p-6 flex items-center justify-center hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer group min-h-[200px]"
                   onClick={() => setShowAddForm(true)}
                 >
                   <div className="text-center">
@@ -495,7 +496,7 @@ function TasksPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                       </svg>
                     </div>
-                    <p className="text-gray-600 dark:text-gray-400 font-medium">Add New Task</p>
+                    <p className="text-gray-600 font-medium">Add New Task</p>
                   </div>
                 </motion.div>
               )}
@@ -514,10 +515,10 @@ function TasksPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">
                 {showCompleted ? 'No completed tasks yet!' : 'No active tasks!'}
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
+              <p className="text-gray-600 mb-6">
                 {showCompleted 
                   ? 'Complete some tasks to see them here.' 
                   : 'Create your first task to get started.'

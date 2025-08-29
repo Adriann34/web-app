@@ -409,7 +409,7 @@ function TasksPage() {
                 >
                   {/* Task Number */}
                   <div className="absolute top-4 left-4">
-                    <span className="text-lg font-bold text-gray-700">#{(index + 1).toString().padStart(2, '0')}</span>                  </div>
+                    <span className="text-lg font-bold text-gray-700 dark:text-gray-300">#{(index + 1).toString().padStart(2, '0')}</span>                  </div>
 
                   {/* Action Buttons */}
                   <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
@@ -438,11 +438,11 @@ function TasksPage() {
 
                   {/* Task Content */}
                   <div className="mt-8 mb-4 flex-grow">
-                    <h3 className="font-bold text-lg mb-2 text-gray-800" title={task.title}>
+                    <h3 className="font-bold text-lg mb-2 text-gray-800 dark:text-white" title={task.title}>
                       {task.title}
                     </h3>
                     {task.description && (
-                      <div className="text-sm text-gray-700 whitespace-pre-wrap break-words" title={task.description}>
+                      <div className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap break-words" title={task.description}>
                         {task.description}
                       </div>
                     )}
@@ -450,14 +450,14 @@ function TasksPage() {
 
                   {/* Task Meta */}
                   <div className="flex items-center justify-between mt-auto">
-                    <div className="text-sm font-medium text-gray-800">
+                    <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
                       {task.estimatedHours} hr{task.estimatedHours !== 1 ? 's' : ''}
                     </div>
                     
                     <button
                       onClick={() => toggleTask(task.id, task.completed)}
-                      className={`w-8 h-8 rounded-full border-2 border-gray-700 flex items-center justify-center transition-all hover:scale-110 z-10 ${
-                        task.completed ? 'bg-gray-700 text-white' : 'bg-transparent hover:bg-gray-700 hover:bg-opacity-20'
+                      className={`w-8 h-8 rounded-full border-2 border-gray-700 dark:border-gray-200 flex items-center justify-center transition-all hover:scale-110 z-10 ${
+                        task.completed ? 'bg-gray-700 dark:bg-gray-200 text-white dark:text-gray-800' : 'bg-transparent hover:bg-gray-700 hover:bg-opacity-20 dark:hover:bg-gray-200 dark:hover:bg-opacity-20'
                       }`}
                     >
                       {task.completed && (
